@@ -1,0 +1,129 @@
+
+{% extends 'base_main.html' %}
+
+{% block title %}
+    天天生鲜-商品购物车
+{% endblock %}
+
+{% block content %}
+
+	<div class="total_count">全部商品<em>{{ all_nums }}</em>件</div>
+	<ul class="cart_list_th clearfix">
+		<li class="col01">商品名称</li>
+		<li class="col02">商品单位</li>
+		<li class="col03">商品价格</li>
+		<li class="col04">数量</li>
+		<li class="col05">小计</li>
+		<li class="col06">操作</li>
+	</ul>
+    {% csrf_token %}
+    {% if goods_all %}
+        {% for goods in goods_all %}
+            <ul class="cart_list_td clearfix">
+                <li class="col01"><input type="checkbox"  onchange="choice({{ goods.0.id }})"  name="" {% if goods.1 %} checked {% endif %}></li>
+                <li class="col02"><img src="/media/{{ goods.0.goods_front_image }}"></li>
+                <li class="col03">{{ goods.0.name }}<br><em>{{ goods.0.shop_price }}元/500g</em></li>
+                <li class="col04">500g</li>
+                <li class="col05">{{ goods.0.shop_price }}元</li>
+                <li class="col06">
+                    <div class="num_add">
+                        <a href="javascript:;" class="add fl" onclick="add_goods({{ goods.shop_price }})">+</a>
+                        <input type="text" class="num_show fl" value="{{ goods.2 }}">
+                        <a href="javascript:;" class="minus fl">-</a>
+                    </div>
+            <script>
+                function add_goods( id ,price) {
+                    {#获取默认的个数#}
+                    var num=$('.num_show'+id).val()
+                    {#计算价格#}
+                    var total=(parseInt(num)+1)*price
+
+                    {#修改总价#}
+                    $('#goods_'+id).html(total+'元')
+                    {#修改商品个数#}
+                    $('.num_show'+id).val(parseInt(num)+1)
+                }
+
+                function sub_goods(price) {
+                    var num=$('.num_show').val()
+                    var count=parseInt(num)-1
+                    if(count>0){
+                        var total=count * price
+                        $('.total em').html(total+'元')
+                        $('.num_show').val(count)
+                    }
+
+                }
+                total_price()
+                function choice(id) {
+                    var csrf=$('input[name="csrfmiddlewaretoken"]').val()
+                    $.ajax({
+                        url: '/cart/check/',
+                        type:'POST',
+                        dataType:'json',
+                        headers:{'X-CSRFToken':csrf},
+                        data:{'goods_id':id},
+                        success:function (data) {
+                            if(data.code=='200'){
+                                total_price()
+                            }
+                        }
+                    })
+
+                }
+
+                function total_price() {
+                    $.get('/cart/f_price/',function (data) {
+                        if (data.code == '200'){
+
+                            for (var i=0; i<data.cart_data.goods_price.length;i++){
+                                price=data.cart_data.goods_price[i][1]+'元'
+                                $('#goods_'+data.cart_data.goods_price[i][0]).html(price)
+                            }
+                            $('#total_price em').html(dat.cart_data.all_price+'元')
+                        }
+                    })
+                }
+
+                total_price()
+
+            </script>
+                </li>
+                <li class="col07" id="goods_{{ goods.0.id }}">25.80元</li>
+                <li class="col08"><a href="javascript:;">删除</a></li>
+            </ul>
+        {% endfor %}
+    {% endif %}
+    <script>
+        $.get('/cart/f_price/', function(data){
+            if(data.code == '200'){
+                for(var i=0; i<data.cart_data.goods_price.length;i++){
+                    price = data.cart_data.goods_price[i][1] + '元'
+                    $('#goods_' + data.cart_data.goods_price[i][0]).html(price)
+                }
+                $('#total_price em').html(data.cart_data.all_price + '元')
+            }
+        })
+    </script>
+
+    <script>
+        $.get('/cart/f_nums/', function(data){
+            if(data.code == '200'){
+
+                $('#total_price em').html(data.all_nums + '元')
+            }
+        })
+    </script>
+
+
+
+
+
+	<ul class="settlements">
+		<li class="col01"><input type="checkbox" name="" checked=""></li>
+		<li class="col02">全选</li>
+		<li class="col03" id="total_price">合计(不含运费)：<span>¥</span><em>42.60</em><br>共计<b>{{ all_num }}</b>件商品</li>
+		<li class="col04"><a href="{% url 'orders:order' %}">去结算</a></li>
+	</ul>
+
+{% endblock %}
